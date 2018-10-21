@@ -22,6 +22,8 @@ from selenium.webdriver import ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from seleniumrequests import Chrome
 import xmltodict
+import pickle
+from pathlib import Path
 
 try:
     import pandas as pd
@@ -97,6 +99,12 @@ def get_web_driver(email, password, headless=False, mfa_method=None,
         # chrome_options.add_argument("--window-size=1920x1080")
 
     driver = Chrome(chrome_options=chrome_options, executable_path="%s" % executable_path)
+    try:
+        with open(COOKIEFILE, "rb") as cookiefile:
+            cookies = pickle.load(cookiefile)
+            driver.add_cookie(cookies)
+    except OSError:
+        pass
     driver.get("https://www.mint.com")
     driver.implicitly_wait(20)  # seconds
     driver.find_element_by_link_text("Log In").click()
@@ -133,6 +141,9 @@ def get_web_driver(email, password, headless=False, mfa_method=None,
             pass
         finally:
             driver.implicitly_wait(20)  # seconds
+
+    with open(COOKIEFILE, "wb") as cookies:
+        pickle.dump(driver.get_cookies(), cookies)
 
     # Wait until the overview page has actually loaded, and if wait_for_sync==True, sync has completed.
     if wait_for_sync:
@@ -185,6 +196,8 @@ MINT_ROOT_URL = 'https://mint.intuit.com'
 MINT_ACCOUNTS_URL = 'https://accounts.intuit.com'
 
 JSON_HEADER = {'accept': 'application/json'}
+
+COOKIEFILE = Path.home() / ".mintapi_cookies.pkl"
 
 
 class MintException(Exception):
