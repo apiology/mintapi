@@ -99,14 +99,14 @@ def get_web_driver(email, password, headless=False, mfa_method=None,
         # chrome_options.add_argument("--window-size=1920x1080")
 
     driver = Chrome(chrome_options=chrome_options, executable_path="%s" % executable_path)
+    driver.get("https://www.mint.com")
+    driver.implicitly_wait(20)  # seconds
     try:
         with open(COOKIEFILE, "rb") as cookiefile:
             for cookie in pickle.load(cookiefile):
                 driver.add_cookie(cookie)
     except OSError:
         pass
-    driver.get("https://www.mint.com")
-    driver.implicitly_wait(20)  # seconds
     driver.find_element_by_link_text("Log In").click()
 
     driver.find_element_by_id("ius-userid").send_keys(email)
