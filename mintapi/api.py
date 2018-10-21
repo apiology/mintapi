@@ -101,8 +101,8 @@ def get_web_driver(email, password, headless=False, mfa_method=None,
     driver = Chrome(chrome_options=chrome_options, executable_path="%s" % executable_path)
     try:
         with open(COOKIEFILE, "rb") as cookiefile:
-            cookies = pickle.load(cookiefile)
-            driver.add_cookie(cookies)
+            for cookie in pickle.load(cookiefile):
+                driver.add_cookie(cookie)
     except OSError:
         pass
     driver.get("https://www.mint.com")
