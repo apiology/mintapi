@@ -1,6 +1,6 @@
 import atexit
 from datetime import date, datetime, timedelta
-import distutils
+import distutils.spawn
 import io
 import json
 import os
