@@ -1,5 +1,6 @@
 import atexit
 from datetime import date, datetime, timedelta
+import distutils
 import io
 import json
 import os
@@ -61,6 +62,9 @@ CHROME_ZIP_TYPES = {
     'win32': 'win32',
     'win64': 'win32'
 }
+HOME_PATH = os.path.expanduser("~")
+MINTAPI_STATE_PATH = os.path.join(HOME_PATH, '.mintapi')
+
 
 def get_web_driver(email, password, headless=False, mfa_method=None,
                    mfa_input_callback=None, wait_for_sync=True,
@@ -71,23 +75,27 @@ def get_web_driver(email, password, headless=False, mfa_method=None,
         mfa_method = "sms"
 
     zip_type = ""
-    executable_path = os.getcwd() + os.path.sep + 'chromedriver'
+    executable_name = 'chromedriver'
     if _platform in ['win32', 'win64']:
-        executable_path += '.exe'
+        executable_name += '.exe'
 
     zip_type = CHROME_ZIP_TYPES.get(_platform)
 
-    if not os.path.exists(executable_path):
-        zip_file_url = CHROME_DRIVER_BASE_URL % (CHROME_DRIVER_VERSION, zip_type)
-        request = requests.get(zip_file_url)
+    executable_path = distutils.spawn.find_executable(executable_name)
 
-        if request.status_code != 200:
-            raise RuntimeError('Error finding chromedriver at %r, status = %d' %
-                               (zip_file_url, request.status_code))
+    if executable_path is None:
+        executable_path = os.path.join(MINTAPI_STATE_PATH, executable_name)
 
-        zip_file = zipfile.ZipFile(io.BytesIO(request.content))
-        zip_file.extractall()
-        os.chmod(executable_path, 0o755)
+        if not os.path.exists(executable_path):
+            zip_file_url = CHROME_DRIVER_BASE_URL % (CHROME_DRIVER_VERSION, zip_type)
+            request = requests.get(zip_file_url)
+
+            if request.status_code != 200:
+                raise RuntimeError('Error finding chromedriver at %r, status = %d' %
+                                   (zip_file_url, request.status_code))
+            zip_file = zipfile.ZipFile(io.BytesIO(request.content))
+            zip_file.extractall(MINTAPI_STATE_PATH)
+            os.chmod(executable_path, 0o755)
 
     chrome_options = ChromeOptions()
     if headless:
@@ -714,8 +722,7 @@ def main():
         default=None,
         help='The password for your Mint.com account')
 
-    home = os.path.expanduser("~")
-    default_session_path = os.path.join(home, '.mintapi', 'session')
+    default_session_path = os.path.join(MINTAPI_STATE_PATH, 'session')
     cmdline.add_argument(
         '--session-path',
         nargs='?',
